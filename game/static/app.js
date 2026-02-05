@@ -19,6 +19,8 @@ let currentPlayer = null;
 let loginFailures = 0;
 let lockedUntil = null;
 let lastEncounterPet = false;
+let trainingTimer = null;
+let exploringTimer = null;
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -86,17 +88,24 @@ function updatePlayerInfo(player) {
 }
 
 function updateProgressInfo(data) {
-  if (!data || !data.player) {
+  if (!data) {
     progressInfoEl.textContent = "暂无修炼信息。";
     return;
   }
   if (data.status === "started") {
     progressInfoEl.textContent = `开始修炼，预计 ${data.available_in} 秒后完成。`;
     log("修炼开始");
+    scheduleTrainingRefresh(data.available_in);
     return;
   }
   if (data.status === "training") {
     progressInfoEl.textContent = `修炼中，剩余 ${data.available_in} 秒。`;
+    scheduleTrainingRefresh(data.available_in);
+    return;
+  }
+  if (!data.player || !data.player.stats) {
+    progressInfoEl.textContent = "修炼完成，正在同步信息。";
+    scheduleTrainingRefresh(2);
     return;
   }
   const player = data.player;
@@ -117,11 +126,13 @@ function updateExploreInfo(data) {
     lastEncounterPet = false;
     exploreInfoEl.textContent = `开始历练，预计 ${data.available_in} 秒后完成。`;
     log("历练开始");
+    scheduleExploreRefresh(data.available_in);
     return;
   }
   if (data.status === "exploring") {
     lastEncounterPet = false;
     exploreInfoEl.textContent = `历练中，剩余 ${data.available_in} 秒。`;
+    scheduleExploreRefresh(data.available_in);
     return;
   }
   const rewards = data.reward || {};
@@ -297,6 +308,36 @@ attachButton("explore", async () => {
     log(`历练失败：${error.message}`, null, true);
   }
 });
+
+function scheduleTrainingRefresh(seconds) {
+  if (trainingTimer) {
+    clearTimeout(trainingTimer);
+  }
+  const delay = Math.max(2, Math.min(10, seconds)) * 1000;
+  trainingTimer = setTimeout(async () => {
+    try {
+      const data = await request("/cultivation/train", { method: "POST" });
+      updateProgressInfo(data);
+    } catch (error) {
+      log(`修炼失败：${error.message}`, null, true);
+    }
+  }, delay);
+}
+
+function scheduleExploreRefresh(seconds) {
+  if (exploringTimer) {
+    clearTimeout(exploringTimer);
+  }
+  const delay = Math.max(2, Math.min(10, seconds)) * 1000;
+  exploringTimer = setTimeout(async () => {
+    try {
+      const data = await request("/event/explore", { method: "POST" });
+      updateExploreInfo(data);
+    } catch (error) {
+      log(`历练失败：${error.message}`, null, true);
+    }
+  }, delay);
+}
 
 attachButton("pve", async () => {
   try {
