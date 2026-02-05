@@ -189,6 +189,14 @@ button.danger {
   margin-bottom: 6px;
 }
 
+.bag-info {
+  background: #f7f8fc;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  color: #394150;
+}
+
 pre {
   background: #f7f8fc;
   border-radius: 12px;

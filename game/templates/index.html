@@ -99,6 +99,7 @@
           <button class="tab" data-tab="explore">历练</button>
           <button class="tab" data-tab="challenge">挑战</button>
           <button class="tab" data-tab="pet">灵宠</button>
+          <button class="tab" data-tab="bag">背包</button>
         </div>
 
         <div class="tab-content active" id="tab-cultivation">
@@ -136,6 +137,7 @@
               灵宠 ID
               <input id="petId" placeholder="pet_xxxx" />
             </label>
+            <button class="ghost" id="bindPet">绑定出战</button>
             <button class="ghost" id="upgradePet">灵宠升级</button>
             <button class="ghost" id="getEvolveOptions">获取进化选项</button>
             <label>
@@ -145,6 +147,10 @@
             <button class="primary" id="evolvePet">提交进化</button>
           </div>
           <pre id="petInfo">灵宠信息将在这里显示。</pre>
+        </div>
+
+        <div class="tab-content" id="tab-bag">
+          <div id="bagInfo" class="bag-info">背包物品将在这里显示。</div>
         </div>
       </section>
     </main>

@@ -7,6 +7,7 @@ const progressInfoEl = document.getElementById("progressInfo");
 const exploreInfoEl = document.getElementById("exploreInfo");
 const battleInfoEl = document.getElementById("battleInfo");
 const petInfoEl = document.getElementById("petInfo");
+const bagInfoEl = document.getElementById("bagInfo");
 const playerBarEl = document.getElementById("playerBar");
 const authSection = document.getElementById("authSection");
 const roleSection = document.getElementById("roleSection");
@@ -70,7 +71,8 @@ function formatPlayer(player) {
 function updatePlayerInfo(player) {
   playerInfoEl.textContent = formatPlayer(player);
   if (player) {
-    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 灵石 ${player.spirit_stones}`;
+    const boundPet = player.bound_pet_id ? ` · 出战 ${player.bound_pet_id}` : "";
+    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 灵石 ${player.spirit_stones}${boundPet}`;
   } else {
     playerBarEl.textContent = "尚未进入修仙。";
   }
@@ -79,6 +81,14 @@ function updatePlayerInfo(player) {
 function updateProgressInfo(data) {
   if (!data || !data.player) {
     progressInfoEl.textContent = "暂无修炼信息。";
+    return;
+  }
+  if (data.status === "started") {
+    progressInfoEl.textContent = `开始修炼，预计 ${data.available_in} 秒后完成。`;
+    return;
+  }
+  if (data.status === "training") {
+    progressInfoEl.textContent = `修炼中，剩余 ${data.available_in} 秒。`;
     return;
   }
   const player = data.player;
@@ -93,6 +103,16 @@ function updateProgressInfo(data) {
 function updateExploreInfo(data) {
   if (!data) {
     exploreInfoEl.textContent = "暂无历练结果。";
+    return;
+  }
+  if (data.status === "started") {
+    lastEncounterPet = false;
+    exploreInfoEl.textContent = `开始历练，预计 ${data.available_in} 秒后完成。`;
+    return;
+  }
+  if (data.status === "exploring") {
+    lastEncounterPet = false;
+    exploreInfoEl.textContent = `历练中，剩余 ${data.available_in} 秒。`;
     return;
   }
   const rewards = data.reward || {};
@@ -145,6 +165,7 @@ function updatePetInfo(data) {
   petInfoEl.textContent = [
     `灵宠：${data.name} · ${data.rarity}`,
     `等级：${data.level} · 进化阶段：${data.evolution_stage}`,
+    `五行：${(data.elements || []).join("、")}`,
     `属性：攻击 ${data.base_stats.atk} / 防御 ${data.base_stats.def} / 生命 ${data.base_stats.hp}`,
   ].join("\n");
 }
@@ -317,6 +338,20 @@ attachButton("upgradePet", async () => {
   }
 });
 
+attachButton("bindPet", async () => {
+  const petId = document.getElementById("petId").value;
+  try {
+    const data = await request("/pet/bind", {
+      method: "POST",
+      body: JSON.stringify({ pet_id: petId }),
+    });
+    log(`绑定灵宠成功：${data.bound_pet_id}`);
+    await refreshPlayer();
+  } catch (error) {
+    log(`绑定灵宠失败：${error.message}`, null, true);
+  }
+});
+
 attachButton("refreshPets", async () => {
   await refreshPets();
 });
@@ -358,6 +393,7 @@ async function refreshPlayer() {
     const data = await request("/player/me", { method: "GET" });
     currentPlayer = data;
     updatePlayerInfo(currentPlayer);
+    updateBagInfo(currentPlayer.inventory || {});
     log(`角色 ${data.name} 已载入`);
     return data;
   } catch (error) {
@@ -375,6 +411,15 @@ async function refreshPets() {
     renderPetGrid([]);
     log(`获取灵宠失败：${error.message}`, null, true);
   }
+}
+
+function updateBagInfo(inventory = {}) {
+  const entries = Object.entries(inventory);
+  if (!entries.length) {
+    bagInfoEl.textContent = "背包暂无道具。";
+    return;
+  }
+  bagInfoEl.textContent = entries.map(([name, count]) => `${name} × ${count}`).join("\n");
 }
 
 function renderPetGrid(pets) {
@@ -458,6 +503,11 @@ document.querySelectorAll(".tab").forEach((tab) => {
     document.getElementById(`tab-${tab.dataset.tab}`).classList.add("active");
     if (tab.dataset.tab === "pet") {
       refreshPets();
+    }
+    if (tab.dataset.tab === "bag") {
+      if (currentPlayer) {
+        updateBagInfo(currentPlayer.inventory || {});
+      }
     }
   });
 });

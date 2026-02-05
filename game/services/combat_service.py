@@ -14,6 +14,8 @@ def pve_battle(player_id: str) -> dict:
     player = data["players"].get(player_id)
     if not player:
         raise ValueError("角色不存在")
+    if player.get("training_until") or player.get("exploring_until"):
+        raise ValueError("正在修炼或历练中，无法挑战")
     monster = {
         "name": "妖兽",
         "stats": {"hp": 80 + player["level"] * 5, "atk": 8 + player["level"], "def": 5},
@@ -43,6 +45,8 @@ def pvp_battle(player_id: str, opponent_id: str) -> dict:
     opponent = data["players"].get(opponent_id)
     if not player or not opponent:
         raise ValueError("角色不存在")
+    if player.get("training_until") or player.get("exploring_until"):
+        raise ValueError("正在修炼或历练中，无法挑战")
     player_score = player["stats"]["atk"] + player["stats"]["def"] + random.randint(0, 10)
     opponent_score = opponent["stats"]["atk"] + opponent["stats"]["def"] + random.randint(0, 10)
     victory = player_score >= opponent_score

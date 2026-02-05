@@ -11,6 +11,19 @@ from game.config import (
 from game.services.player_service import update_player
 from game.storage.json_store import load_data, save_data
 
+PET_NAME_PREFIXES = ["炎月", "青鳞", "云纹", "玄冰", "紫金", "赤焰", "碧落", "霜影"]
+PET_SPECIES = ["狐", "蛇", "鹿", "龟", "狮", "鹤", "狼", "虎"]
+
+
+def _random_pet_name() -> str:
+    return f"{random.choice(PET_NAME_PREFIXES)}{random.choice(PET_SPECIES)}"
+
+
+def _random_elements() -> list[str]:
+    elements = ["金", "木", "水", "火", "土"]
+    count = random.choices([1, 2, 3], weights=[0.4, 0.4, 0.2])[0]
+    return random.sample(elements, k=count)
+
 
 def list_pets(player_id: str) -> list[dict]:
     data = load_data()
@@ -30,6 +43,10 @@ def capture_pet(player_id: str) -> dict:
     player = data["players"].get(player_id)
     if not player:
         raise ValueError("角色不存在")
+    if player.get("training_until") and int(player["training_until"]) > 0:
+        raise ValueError("正在修炼中，无法捕捉")
+    if player.get("exploring_until") and int(player["exploring_until"]) > 0:
+        raise ValueError("正在历练中，无法捕捉")
     if len(player.get("pets", [])) >= 5:
         raise ValueError("灵宠背包已满")
     inventory = player.get("inventory", {})
@@ -38,11 +55,12 @@ def capture_pet(player_id: str) -> dict:
     rarity = random.choices(PET_RARITY, weights=[0.7, 0.25, 0.05])[0]
     pet_id = f"pet_{uuid.uuid4().hex[:8]}"
     pet = {
-        "name": f"灵宠{pet_id[-4:]}",
+        "name": _random_pet_name(),
         "rarity": rarity,
         "level": 1,
         "evolution_stage": 0,
         "base_stats": PET_BASE_STATS[rarity].copy(),
+        "elements": _random_elements(),
         "bonus_stats": {},
         "owner_id": player_id,
         "evolution_failures": 0,
@@ -55,11 +73,32 @@ def capture_pet(player_id: str) -> dict:
     return {"pet_id": pet_id, **pet}
 
 
+def bind_pet(player_id: str, pet_id: str) -> dict:
+    data = load_data()
+    player = data["players"].get(player_id)
+    pet = data["pets"].get(pet_id)
+    if not player or not pet:
+        raise ValueError("角色或灵宠不存在")
+    if pet["owner_id"] != player_id:
+        raise ValueError("无法绑定其他人的灵宠")
+    root_elements = set(player.get("root_elements", []))
+    pet_elements = set(pet.get("elements", []))
+    if not root_elements.intersection(pet_elements):
+        raise ValueError("灵宠与角色灵根不匹配")
+    player["bound_pet_id"] = pet_id
+    data["players"][player_id] = player
+    save_data(data)
+    return {"bound_pet_id": pet_id}
+
+
 def upgrade_pet(player_id: str, pet_id: str) -> dict:
     data = load_data()
+    player = data["players"].get(player_id)
     pet = data["pets"].get(pet_id)
-    if not pet or pet["owner_id"] != player_id:
+    if not player or not pet or pet["owner_id"] != player_id:
         raise ValueError("灵宠不存在")
+    if player.get("training_until") or player.get("exploring_until"):
+        raise ValueError("正在修炼或历练中，无法升级")
     pet["level"] += 1
     pet["base_stats"]["hp"] += 4
     pet["base_stats"]["atk"] += 2

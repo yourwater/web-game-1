@@ -1,4 +1,5 @@
 import random
+import time
 
 from game.services.player_service import update_player
 from game.storage.json_store import load_data, save_data
@@ -25,6 +26,24 @@ def explore_event(player_id: str) -> dict:
     player = data["players"].get(player_id)
     if not player:
         raise ValueError("角色不存在")
+    now = int(time.time())
+    if player.get("training_until") and now < player["training_until"]:
+        raise ValueError("正在修炼中，无法历练")
+    exploring_until = player.get("exploring_until")
+    if exploring_until and now < exploring_until:
+        return {"status": "exploring", "available_in": exploring_until - now, "player": player}
+
+    if not exploring_until:
+        exploring_seconds = 10
+        player["exploring_until"] = now + exploring_seconds
+        data["players"][player_id] = player
+        save_data(data)
+        return {"status": "started", "available_in": exploring_seconds, "player": player}
+
+    player["exploring_until"] = None
+    data["players"][player_id] = player
+    save_data(data)
+
     if event[0] == "spirit_stones":
         stones = player["spirit_stones"] + event[1]
         player = update_player(player_id, {"spirit_stones": stones})
