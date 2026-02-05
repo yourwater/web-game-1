@@ -21,10 +21,12 @@ def me(user):
 def create(user):
     payload = request.get_json(force=True)
     name = payload.get("name")
+    root_elements = payload.get("root_elements")
+    avatar = payload.get("avatar")
     if not name:
         return jsonify({"error": "缺少角色名"}), 400
     try:
-        player = create_player(user["user_id"], name)
+        player = create_player(user["user_id"], name, root_elements=root_elements, avatar=avatar)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify(player)

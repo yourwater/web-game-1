@@ -11,7 +11,15 @@ def train_player(player_id: str) -> dict:
     if not player:
         raise ValueError("角色不存在")
 
-    gain = random.randint(5, 15)
+    root_count = len(player.get("root_elements", [])) or 1
+    root_multiplier = {
+        1: 1.3,
+        2: 1.15,
+        3: 1.0,
+        4: 0.9,
+        5: 0.8,
+    }.get(root_count, 1.0)
+    gain = int(random.randint(5, 15) * root_multiplier)
     exp = player["exp"] + gain
     level = player["level"]
     realm_index = REALM_ORDER.index(player["realm"])

@@ -54,10 +54,12 @@ function formatPlayer(player) {
   if (!player) {
     return "尚未获取角色信息。";
   }
+  const roots = player.root_elements ? player.root_elements.join("、") : "未知";
   return [
     `昵称：${player.name}`,
     `境界：${player.realm} · 等级：${player.level}`,
     `修为：${player.exp} · 灵石：${player.spirit_stones}`,
+    `灵根：${roots}`,
     `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp} / 速度 ${player.stats.spd}`,
     `灵宠数量：${player.pets.length}`,
     `角色ID：${player.player_id}`,
@@ -200,14 +202,16 @@ attachButton("logout", async () => {
 
 attachButton("createPlayer", async () => {
   const name = document.getElementById("playerName").value;
+  const avatar = document.getElementById("avatar").value;
+  const rootElements = randomRootElements();
   try {
     const data = await request("/player/create", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, root_elements: rootElements, avatar }),
     });
     currentPlayer = data;
     updatePlayerInfo(currentPlayer);
-    log(`角色 ${data.name} 创建成功`);
+    log(`角色 ${data.name} 创建成功，灵根：${rootElements.join("、")}`);
   } catch (error) {
     log(`创建角色失败：${error.message}`, null, true);
   }
@@ -348,6 +352,23 @@ function showSection(section) {
   gameSection.style.display = section === "game" ? "block" : "none";
 }
 
+function randomRootElements() {
+  const elements = ["金", "木", "水", "火", "土"];
+  const weights = [0.15, 0.25, 0.3, 0.2, 0.1];
+  const counts = [1, 2, 3, 4, 5];
+  const roll = Math.random();
+  let acc = 0;
+  let rootCount = 3;
+  for (let i = 0; i < counts.length; i += 1) {
+    acc += weights[i];
+    if (roll <= acc) {
+      rootCount = counts[i];
+      break;
+    }
+  }
+  return elements.sort(() => 0.5 - Math.random()).slice(0, rootCount);
+}
+
 document.getElementById("enterGame").addEventListener("click", async () => {
   const player = await refreshPlayer();
   if (player) {
@@ -385,8 +406,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
 
 if (token) {
   setStatus("已登录");
-  showSection("role");
-  refreshPlayer();
+  showSection("auth");
 } else {
   setStatus("未登录");
   showSection("auth");
