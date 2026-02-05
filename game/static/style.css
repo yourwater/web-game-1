@@ -169,6 +169,26 @@ button.danger {
   gap: 12px;
 }
 
+.pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.pet-card {
+  border: 1px solid #e0e6f2;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f9fafc;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.pet-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
 pre {
   background: #f7f8fc;
   border-radius: 12px;

@@ -111,6 +111,7 @@
         <div class="tab-content" id="tab-explore">
           <div class="button-row">
             <button class="primary" id="explore">历练</button>
+            <button class="ghost" id="captureFromExplore">捕捉灵兽</button>
           </div>
           <pre id="exploreInfo">历练结果将在这里显示。</pre>
         </div>
@@ -129,7 +130,8 @@
 
         <div class="tab-content" id="tab-pet">
           <div class="form-grid">
-            <button class="primary" id="capturePet">捕捉灵宠</button>
+            <button class="ghost" id="refreshPets">刷新灵宠背包</button>
+            <div id="petGrid" class="pet-grid"></div>
             <label>
               灵宠 ID
               <input id="petId" placeholder="pet_xxxx" />

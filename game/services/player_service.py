@@ -36,6 +36,7 @@ def create_player(user_id: str, name: str, root_elements: list[str] | None = Non
         "root_elements": root_elements,
         "avatar": avatar or "male",
         "stats": {"hp": 100, "atk": 10, "def": 8, "spd": 8},
+        "inventory": {"捕兽绳": 5},
         "pets": [],
         "created_at": int(time.time()),
         "last_active": int(time.time()),

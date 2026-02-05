@@ -12,11 +12,29 @@ from game.services.player_service import update_player
 from game.storage.json_store import load_data, save_data
 
 
+def list_pets(player_id: str) -> list[dict]:
+    data = load_data()
+    player = data["players"].get(player_id)
+    if not player:
+        raise ValueError("角色不存在")
+    pets = []
+    for pet_id in player.get("pets", []):
+        pet = data["pets"].get(pet_id)
+        if pet:
+            pets.append({"pet_id": pet_id, **pet})
+    return pets
+
+
 def capture_pet(player_id: str) -> dict:
     data = load_data()
     player = data["players"].get(player_id)
     if not player:
         raise ValueError("角色不存在")
+    if len(player.get("pets", [])) >= 5:
+        raise ValueError("灵宠背包已满")
+    inventory = player.get("inventory", {})
+    if inventory.get("捕兽绳", 0) <= 0:
+        raise ValueError("捕兽绳不足")
     rarity = random.choices(PET_RARITY, weights=[0.7, 0.25, 0.05])[0]
     pet_id = f"pet_{uuid.uuid4().hex[:8]}"
     pet = {
@@ -31,6 +49,8 @@ def capture_pet(player_id: str) -> dict:
     }
     data["pets"][pet_id] = pet
     player["pets"].append(pet_id)
+    inventory["捕兽绳"] = inventory.get("捕兽绳", 0) - 1
+    player["inventory"] = inventory
     save_data(data)
     return {"pet_id": pet_id, **pet}
 

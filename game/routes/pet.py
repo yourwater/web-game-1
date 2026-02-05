@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 from game.routes import require_auth
-from game.services.pet_service import capture_pet, evolve_pet, upgrade_pet
+from game.services.pet_service import capture_pet, evolve_pet, list_pets, upgrade_pet
 from game.services.player_service import get_player
 
 pet_bp = Blueprint("pet", __name__)
@@ -16,6 +16,17 @@ def capture(user):
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify(pet)
+
+
+@pet_bp.get("/list")
+@require_auth
+def list_all(user):
+    try:
+        player = get_player(user["user_id"])
+        pets = list_pets(player["player_id"])
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"pets": pets})
 
 
 @pet_bp.post("/upgrade")

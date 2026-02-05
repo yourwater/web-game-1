@@ -17,6 +17,7 @@ let token = localStorage.getItem(tokenKey);
 let currentPlayer = null;
 let loginFailures = 0;
 let lockedUntil = null;
+let lastEncounterPet = false;
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -98,10 +99,20 @@ function updateExploreInfo(data) {
   const rewardText = Object.keys(rewards)
     .map((key) => `${key === "spirit_stones" ? "灵石" : "修为"}+${rewards[key]}`)
     .join("、");
+  const items = data.items && data.items.length ? `掉落：${data.items.join("、")}` : "";
+  const battleText = data.battle
+    ? `遭遇妖兽：${data.victory ? "胜利" : "失败"}，损失血量 ${data.damage_taken}`
+    : "";
+  lastEncounterPet = Boolean(data.pet_hint);
   exploreInfoEl.textContent = [
     `历练事件：${data.event}`,
+    battleText,
     rewardText ? `奖励：${rewardText}` : "奖励：暂无",
-  ].join("\n");
+    items,
+    data.pet_hint ? "发现灵兽踪迹，可尝试捕捉。" : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function updateBattleInfo(data) {
@@ -276,11 +287,17 @@ attachButton("pvp", async () => {
   }
 });
 
-attachButton("capturePet", async () => {
+attachButton("captureFromExplore", async () => {
+  if (!lastEncounterPet) {
+    log("尚未遇到灵兽，无法捕捉", null, true);
+    return;
+  }
   try {
     const data = await request("/pet/capture", { method: "POST" });
     updatePetInfo(data);
     log(`捕捉灵宠成功：${data.name}`);
+    lastEncounterPet = false;
+    await refreshPets();
   } catch (error) {
     log(`捕捉灵宠失败：${error.message}`, null, true);
   }
@@ -298,6 +315,10 @@ attachButton("upgradePet", async () => {
   } catch (error) {
     log(`灵宠升级失败：${error.message}`, null, true);
   }
+});
+
+attachButton("refreshPets", async () => {
+  await refreshPets();
 });
 
 attachButton("getEvolveOptions", async () => {
@@ -344,6 +365,40 @@ async function refreshPlayer() {
     log(`获取角色失败：${error.message}`, null, true);
     return null;
   }
+}
+
+async function refreshPets() {
+  try {
+    const data = await request("/pet/list", { method: "GET" });
+    renderPetGrid(data.pets || []);
+  } catch (error) {
+    renderPetGrid([]);
+    log(`获取灵宠失败：${error.message}`, null, true);
+  }
+}
+
+function renderPetGrid(pets) {
+  const grid = document.getElementById("petGrid");
+  grid.innerHTML = "";
+  if (!pets.length) {
+    grid.innerHTML = "<div class=\"hint\">暂无灵宠，请先在历练中遭遇灵兽后捕捉。</div>";
+    return;
+  }
+  pets.forEach((pet) => {
+    const card = document.createElement("div");
+    card.className = "pet-card";
+    card.innerHTML = `
+      <strong>${pet.name} (${pet.rarity})</strong>
+      等级：${pet.level}<br/>
+      进化：${pet.evolution_stage}<br/>
+      ID：${pet.pet_id}
+    `;
+    card.addEventListener("click", () => {
+      document.getElementById("petId").value = pet.pet_id;
+      updatePetInfo(pet);
+    });
+    grid.appendChild(card);
+  });
 }
 
 function showSection(section) {
@@ -401,6 +456,9 @@ document.querySelectorAll(".tab").forEach((tab) => {
     document.querySelectorAll(".tab-content").forEach((item) => item.classList.remove("active"));
     tab.classList.add("active");
     document.getElementById(`tab-${tab.dataset.tab}`).classList.add("active");
+    if (tab.dataset.tab === "pet") {
+      refreshPets();
+    }
   });
 });
 
