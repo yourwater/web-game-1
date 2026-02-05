@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
 from game.config import SECRET_KEY
 from game.routes import register_blueprints
@@ -12,7 +12,7 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return jsonify({"message": "修仙游戏 API 运行中"})
+        return render_template("index.html")
 
     return app
 
