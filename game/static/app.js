@@ -79,9 +79,9 @@ function formatPlayer(player) {
 function updatePlayerInfo(player) {
   playerInfoEl.textContent = formatPlayer(player);
   if (player) {
-    const boundPet = player.bound_pet_id ? ` · 出战 ${player.bound_pet_id}` : "";
+    const boundPetName = player.bound_pet_name ? ` · 出战 ${player.bound_pet_name}` : "";
     const hpText = `${player.stats.hp}/${player.stats.max_hp ?? player.stats.hp}`;
-    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 修为 ${player.exp}/${player.exp_required ?? "?"} · 灵石 ${player.spirit_stones} · HP ${hpText} · 灵根 ${player.root_elements?.join("、") ?? "未知"}${boundPet}`;
+    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 修为 ${player.exp}/${player.exp_required ?? "?"} · 灵石 ${player.spirit_stones} · HP ${hpText} · 灵根 ${player.root_elements?.join("、") ?? "未知"}${boundPetName}`;
   } else {
     playerBarEl.textContent = "尚未进入修仙。";
   }
@@ -115,6 +115,7 @@ function updateProgressInfo(data) {
     `修为：${player.exp} · 灵石：${player.spirit_stones}`,
     `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp}/${player.stats.max_hp ?? player.stats.hp}`,
   ].join("\n");
+  updatePlayerInfo(player);
 }
 
 function updateExploreInfo(data) {
@@ -153,6 +154,9 @@ function updateExploreInfo(data) {
   ]
     .filter(Boolean)
     .join("\n");
+  if (data.player && data.player.stats) {
+    updatePlayerInfo(data.player);
+  }
 }
 
 function updateBattleInfo(data) {
