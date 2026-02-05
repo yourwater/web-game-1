@@ -130,6 +130,10 @@ label {
   max-width: 520px;
 }
 
+#authSection {
+  max-width: 520px;
+}
+
 input {
   padding: 10px 12px;
   border-radius: 10px;
