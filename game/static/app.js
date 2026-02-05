@@ -57,12 +57,18 @@ function formatPlayer(player) {
     return "尚未获取角色信息。";
   }
   const roots = player.root_elements ? player.root_elements.join("、") : "未知";
+  const expRequired = player.exp_required ?? "未知";
+  const hpText = `${player.stats.hp}/${player.stats.max_hp ?? player.stats.hp}`;
+  const bonusText = player.bonus_training_multiplier
+    ? `修炼加成：+${Math.round(player.bonus_training_multiplier * 100)}%`
+    : "修炼加成：+0%";
   return [
     `昵称：${player.name}`,
     `境界：${player.realm} · 等级：${player.level}`,
-    `修为：${player.exp} · 灵石：${player.spirit_stones}`,
+    `修为：${player.exp}/${expRequired} · 灵石：${player.spirit_stones}`,
     `灵根：${roots}`,
-    `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp} / 速度 ${player.stats.spd}`,
+    `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${hpText} / 速度 ${player.stats.spd}`,
+    bonusText,
     `灵宠数量：${player.pets.length}`,
     `角色ID：${player.player_id}`,
   ].join("\n");
@@ -72,7 +78,8 @@ function updatePlayerInfo(player) {
   playerInfoEl.textContent = formatPlayer(player);
   if (player) {
     const boundPet = player.bound_pet_id ? ` · 出战 ${player.bound_pet_id}` : "";
-    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 灵石 ${player.spirit_stones}${boundPet}`;
+    const hpText = `${player.stats.hp}/${player.stats.max_hp ?? player.stats.hp}`;
+    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 灵石 ${player.spirit_stones} · HP ${hpText}${boundPet}`;
   } else {
     playerBarEl.textContent = "尚未进入修仙。";
   }
@@ -85,6 +92,7 @@ function updateProgressInfo(data) {
   }
   if (data.status === "started") {
     progressInfoEl.textContent = `开始修炼，预计 ${data.available_in} 秒后完成。`;
+    log("修炼开始");
     return;
   }
   if (data.status === "training") {
@@ -96,7 +104,7 @@ function updateProgressInfo(data) {
     "修炼完成。",
     `当前境界：${player.realm} · 等级：${player.level}`,
     `修为：${player.exp} · 灵石：${player.spirit_stones}`,
-    `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp}`,
+    `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp}/${player.stats.max_hp ?? player.stats.hp}`,
   ].join("\n");
 }
 
@@ -108,6 +116,7 @@ function updateExploreInfo(data) {
   if (data.status === "started") {
     lastEncounterPet = false;
     exploreInfoEl.textContent = `开始历练，预计 ${data.available_in} 秒后完成。`;
+    log("历练开始");
     return;
   }
   if (data.status === "exploring") {
@@ -164,7 +173,8 @@ function updatePetInfo(data) {
   }
   petInfoEl.textContent = [
     `灵宠：${data.name} · ${data.rarity}`,
-    `等级：${data.level} · 进化阶段：${data.evolution_stage}`,
+    `等级：${data.level} · 经验：${data.exp ?? 0}/50`,
+    `进化次数：${data.evolution_stage}/${data.max_evolution_stage ?? 6}`,
     `五行：${(data.elements || []).join("、")}`,
     `属性：攻击 ${data.base_stats.atk} / 防御 ${data.base_stats.def} / 生命 ${data.base_stats.hp}`,
   ].join("\n");
@@ -268,7 +278,9 @@ attachButton("train", async () => {
   try {
     const data = await request("/cultivation/train", { method: "POST" });
     updateProgressInfo(data);
-    log("修炼完成");
+    if (!data.status) {
+      log("修炼完成");
+    }
   } catch (error) {
     log(`修炼失败：${error.message}`, null, true);
   }
@@ -278,7 +290,9 @@ attachButton("explore", async () => {
   try {
     const data = await request("/event/explore", { method: "POST" });
     updateExploreInfo(data);
-    log("历练完成");
+    if (!data.status) {
+      log("历练完成");
+    }
   } catch (error) {
     log(`历练失败：${error.message}`, null, true);
   }

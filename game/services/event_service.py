@@ -1,6 +1,7 @@
 import random
 import time
 
+from game.services.pet_service import apply_pet_exp
 from game.services.player_service import update_player
 from game.storage.json_store import load_data, save_data
 
@@ -51,19 +52,23 @@ def explore_event(player_id: str) -> dict:
     if event[0] == "exp":
         exp = player["exp"] + event[1]
         player = update_player(player_id, {"exp": exp})
+        apply_pet_exp(player_id, event[1])
         return {"event": event[2], "reward": {"exp": event[1]}, "player": player}
     if event[0] == "battle":
         monster_hp = 60 + player["level"] * 4
         damage_taken = random.randint(5, 15)
-        victory = random.random() > 0.3
+        current_hp = max(0, player["stats"].get("hp", 0) - damage_taken)
+        victory = current_hp > 0 and random.random() > 0.3
         reward = {"spirit_stones": 10, "exp": 8} if victory else {"exp": 3}
         player = update_player(
             player_id,
             {
                 "spirit_stones": player["spirit_stones"] + reward.get("spirit_stones", 0),
                 "exp": player["exp"] + reward.get("exp", 0),
+                "stats": {**player["stats"], "hp": current_hp},
             },
         )
+        apply_pet_exp(player_id, reward.get("exp", 0))
         return {
             "event": event[2],
             "battle": True,

@@ -2,11 +2,12 @@ import random
 import time
 
 from game.config import REALM_ORDER
+from game.services.pet_service import apply_pet_exp
 from game.services.player_service import update_player
 from game.storage.json_store import load_data, save_data
 
 
-def _exp_required(level: int) -> int:
+def exp_required(level: int) -> int:
     return 80 + (level - 1) * 25 + (level // 5) * 40
 
 
@@ -36,16 +37,17 @@ def train_player(player_id: str) -> dict:
             exp = player["exp"] + gain
             level = player["level"]
             realm_index = REALM_ORDER.index(player["realm"])
-            required = _exp_required(level)
+            required = exp_required(level)
 
             while exp >= required:
                 exp -= required
                 level += 1
-                required = _exp_required(level)
+                required = exp_required(level)
                 if level % 5 == 0 and realm_index < len(REALM_ORDER) - 1:
                     realm_index += 1
             stats = player["stats"].copy()
             stats["hp"] += 5
+            stats["max_hp"] += 5
             stats["atk"] += 1
             stats["def"] += 1
             updates = {
@@ -55,6 +57,7 @@ def train_player(player_id: str) -> dict:
                 "stats": stats,
                 "training_until": None,
             }
+            apply_pet_exp(player_id, gain)
             return update_player(player_id, updates)
 
         training_seconds = 10

@@ -59,6 +59,7 @@ def capture_pet(player_id: str) -> dict:
         "rarity": rarity,
         "level": 1,
         "evolution_stage": 0,
+        "exp": 0,
         "base_stats": PET_BASE_STATS[rarity].copy(),
         "elements": _random_elements(),
         "bonus_stats": {},
@@ -91,6 +92,29 @@ def bind_pet(player_id: str, pet_id: str) -> dict:
     return {"bound_pet_id": pet_id}
 
 
+def apply_pet_exp(player_id: str, exp_gain: int) -> None:
+    data = load_data()
+    player = data["players"].get(player_id)
+    if not player:
+        return
+    bound_pet_id = player.get("bound_pet_id")
+    if not bound_pet_id:
+        return
+    pet = data["pets"].get(bound_pet_id)
+    if not pet:
+        return
+    pet_exp_gain = int(exp_gain * 0.8)
+    pet["exp"] = pet.get("exp", 0) + pet_exp_gain
+    while pet["exp"] >= 50:
+        pet["exp"] -= 50
+        pet["level"] += 1
+        pet["base_stats"]["hp"] += 3
+        pet["base_stats"]["atk"] += 1
+        pet["base_stats"]["def"] += 1
+    data["pets"][bound_pet_id] = pet
+    save_data(data)
+
+
 def upgrade_pet(player_id: str, pet_id: str) -> dict:
     data = load_data()
     player = data["players"].get(player_id)
@@ -105,7 +129,7 @@ def upgrade_pet(player_id: str, pet_id: str) -> dict:
     pet["base_stats"]["def"] += 1
     pet["base_stats"]["spd"] += 1
     save_data(data)
-    return {"pet_id": pet_id, **pet}
+    return {"pet_id": pet_id, **pet, "max_evolution_stage": MAX_EVOLUTION_STAGE}
 
 
 def evolve_pet(player_id: str, pet_id: str, choice: str | None = None) -> dict:
@@ -120,7 +144,7 @@ def evolve_pet(player_id: str, pet_id: str, choice: str | None = None) -> dict:
         options = random.sample(EVOLUTION_BONUS_POOL, k=3)
         pet["pending_evolution_options"] = options
         save_data(data)
-        return {"pet_id": pet_id, "options": options}
+        return {"pet_id": pet_id, "options": options, "max_evolution_stage": MAX_EVOLUTION_STAGE}
     options = pet.get("pending_evolution_options")
     if not options:
         raise ValueError("请先获取进化选项")
@@ -142,4 +166,4 @@ def evolve_pet(player_id: str, pet_id: str, choice: str | None = None) -> dict:
         pet["evolution_failures"] += 1
     pet.pop("pending_evolution_options", None)
     save_data(data)
-    return {"pet_id": pet_id, **pet}
+    return {"pet_id": pet_id, **pet, "max_evolution_stage": MAX_EVOLUTION_STAGE}

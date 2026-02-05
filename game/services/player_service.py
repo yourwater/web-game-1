@@ -35,7 +35,7 @@ def create_player(user_id: str, name: str, root_elements: list[str] | None = Non
         "spirit_stones": 100,
         "root_elements": root_elements,
         "avatar": avatar or "male",
-        "stats": {"hp": 100, "atk": 10, "def": 8, "spd": 8},
+        "stats": {"hp": 100, "max_hp": 100, "atk": 10, "def": 8, "spd": 8},
         "inventory": {"捕兽绳": 5},
         "bound_pet_id": None,
         "training_until": None,

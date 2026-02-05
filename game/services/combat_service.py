@@ -34,6 +34,7 @@ def pve_battle(player_id: str) -> dict:
         {
             "spirit_stones": player["spirit_stones"] + reward.get("spirit_stones", 0),
             "exp": player["exp"] + reward.get("exp", 0),
+            "stats": {**player["stats"], "hp": max(0, player_hp)},
         },
     )
     return {"victory": victory, "reward": reward, "player": updated}
@@ -47,12 +48,24 @@ def pvp_battle(player_id: str, opponent_id: str) -> dict:
         raise ValueError("角色不存在")
     if player.get("training_until") or player.get("exploring_until"):
         raise ValueError("正在修炼或历练中，无法挑战")
+    if player["stats"]["hp"] <= 0:
+        raise ValueError("生命值不足，无法挑战")
     player_score = player["stats"]["atk"] + player["stats"]["def"] + random.randint(0, 10)
     opponent_score = opponent["stats"]["atk"] + opponent["stats"]["def"] + random.randint(0, 10)
     victory = player_score >= opponent_score
+    damage_taken = random.randint(5, 12)
+    current_hp = max(0, player["stats"]["hp"] - damage_taken)
     reward = {"spirit_stones": 20} if victory else {"spirit_stones": 5}
     updated = update_player(
         player_id,
-        {"spirit_stones": player["spirit_stones"] + reward["spirit_stones"]},
+        {
+            "spirit_stones": player["spirit_stones"] + reward["spirit_stones"],
+            "stats": {**player["stats"], "hp": current_hp},
+        },
     )
-    return {"victory": victory, "reward": reward, "player": updated}
+    return {
+        "victory": victory,
+        "reward": reward,
+        "damage_taken": damage_taken,
+        "player": updated,
+    }
