@@ -50,6 +50,8 @@ def train_player(player_id: str) -> dict:
             stats["max_hp"] += 5
             stats["atk"] += 1
             stats["def"] += 1
+            heal_amount = 8 + level * 2
+            stats["hp"] = min(stats["max_hp"], stats["hp"] + heal_amount)
             updates = {
                 "exp": exp,
                 "level": level,

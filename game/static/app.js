@@ -81,7 +81,7 @@ function updatePlayerInfo(player) {
   if (player) {
     const boundPet = player.bound_pet_id ? ` · 出战 ${player.bound_pet_id}` : "";
     const hpText = `${player.stats.hp}/${player.stats.max_hp ?? player.stats.hp}`;
-    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 灵石 ${player.spirit_stones} · HP ${hpText}${boundPet}`;
+    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 修为 ${player.exp}/${player.exp_required ?? "?"} · 灵石 ${player.spirit_stones} · HP ${hpText} · 灵根 ${player.root_elements?.join("、") ?? "未知"}${boundPet}`;
   } else {
     playerBarEl.textContent = "尚未进入修仙。";
   }
