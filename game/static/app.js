@@ -1,27 +1,40 @@
 const apiBase = "";
 const logEl = document.getElementById("log");
+const logPanel = document.getElementById("logPanel");
 const statusEl = document.getElementById("status");
 const playerInfoEl = document.getElementById("playerInfo");
 const progressInfoEl = document.getElementById("progressInfo");
+const exploreInfoEl = document.getElementById("exploreInfo");
 const battleInfoEl = document.getElementById("battleInfo");
 const petInfoEl = document.getElementById("petInfo");
+const playerBarEl = document.getElementById("playerBar");
+const authSection = document.getElementById("authSection");
+const roleSection = document.getElementById("roleSection");
+const gameSection = document.getElementById("gameSection");
 
 const tokenKey = "xiuxian_token";
 let token = localStorage.getItem(tokenKey);
+let currentPlayer = null;
+let loginFailures = 0;
+let lockedUntil = null;
 
 function setStatus(text) {
   statusEl.textContent = text;
 }
 
-function log(message, payload) {
+function log(message, payload, isError = false) {
   const entry = document.createElement("div");
-  entry.className = "log-entry";
+  entry.className = `log-entry${isError ? " error" : ""}`;
   const time = new Date().toLocaleTimeString();
-  entry.textContent = `${time} · ${message}`;
-  if (payload) {
-    entry.textContent += ` → ${JSON.stringify(payload)}`;
+  let content = `${time} · 【修仙日志】${message}`;
+  if (payload && typeof payload === "string") {
+    content += `：${payload}`;
   }
+  entry.textContent = content;
   logEl.prepend(entry);
+  while (logEl.children.length > 100) {
+    logEl.removeChild(logEl.lastChild);
+  }
 }
 
 async function request(path, options = {}) {
@@ -37,20 +50,90 @@ async function request(path, options = {}) {
   return data;
 }
 
-function updatePlayerInfo(data) {
-  playerInfoEl.textContent = JSON.stringify(data, null, 2);
+function formatPlayer(player) {
+  if (!player) {
+    return "尚未获取角色信息。";
+  }
+  return [
+    `昵称：${player.name}`,
+    `境界：${player.realm} · 等级：${player.level}`,
+    `修为：${player.exp} · 灵石：${player.spirit_stones}`,
+    `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp} / 速度 ${player.stats.spd}`,
+    `灵宠数量：${player.pets.length}`,
+    `角色ID：${player.player_id}`,
+  ].join("\n");
+}
+
+function updatePlayerInfo(player) {
+  playerInfoEl.textContent = formatPlayer(player);
+  if (player) {
+    playerBarEl.textContent = `当前角色：${player.name} · ${player.realm} · Lv.${player.level} · 灵石 ${player.spirit_stones}`;
+  } else {
+    playerBarEl.textContent = "尚未进入修仙。";
+  }
 }
 
 function updateProgressInfo(data) {
-  progressInfoEl.textContent = JSON.stringify(data, null, 2);
+  if (!data || !data.player) {
+    progressInfoEl.textContent = "暂无修炼信息。";
+    return;
+  }
+  const player = data.player;
+  progressInfoEl.textContent = [
+    "修炼完成。",
+    `当前境界：${player.realm} · 等级：${player.level}`,
+    `修为：${player.exp} · 灵石：${player.spirit_stones}`,
+    `属性：攻击 ${player.stats.atk} / 防御 ${player.stats.def} / 生命 ${player.stats.hp}`,
+  ].join("\n");
+}
+
+function updateExploreInfo(data) {
+  if (!data) {
+    exploreInfoEl.textContent = "暂无历练结果。";
+    return;
+  }
+  const rewards = data.reward || {};
+  const rewardText = Object.keys(rewards)
+    .map((key) => `${key === "spirit_stones" ? "灵石" : "修为"}+${rewards[key]}`)
+    .join("、");
+  exploreInfoEl.textContent = [
+    `历练事件：${data.event}`,
+    rewardText ? `奖励：${rewardText}` : "奖励：暂无",
+  ].join("\n");
 }
 
 function updateBattleInfo(data) {
-  battleInfoEl.textContent = JSON.stringify(data, null, 2);
+  if (!data) {
+    battleInfoEl.textContent = "暂无挑战结果。";
+    return;
+  }
+  const reward = data.reward || {};
+  const rewardText = Object.keys(reward)
+    .map((key) => `${key === "spirit_stones" ? "灵石" : "修为"}+${reward[key]}`)
+    .join("、");
+  battleInfoEl.textContent = [
+    `战斗结果：${data.victory ? "胜利" : "失败"}`,
+    rewardText ? `奖励：${rewardText}` : "奖励：暂无",
+  ].join("\n");
 }
 
 function updatePetInfo(data) {
-  petInfoEl.textContent = JSON.stringify(data, null, 2);
+  if (!data) {
+    petInfoEl.textContent = "暂无灵宠信息。";
+    return;
+  }
+  if (data.options) {
+    petInfoEl.textContent = [
+      "进化选项：",
+      ...data.options.map((option) => `- ${option[0]} +${option[1]}`),
+    ].join("\n");
+    return;
+  }
+  petInfoEl.textContent = [
+    `灵宠：${data.name} · ${data.rarity}`,
+    `等级：${data.level} · 进化阶段：${data.evolution_stage}`,
+    `属性：攻击 ${data.base_stats.atk} / 防御 ${data.base_stats.def} / 生命 ${data.base_stats.hp}`,
+  ].join("\n");
 }
 
 function attachButton(id, handler) {
@@ -65,15 +148,19 @@ attachButton("register", async () => {
       method: "POST",
       body: JSON.stringify({ username, password }),
     });
-    log("注册成功", data);
+    log(`账号 ${data.username} 注册成功`);
   } catch (error) {
-    log(`注册失败: ${error.message}`);
+    log(`注册失败：${error.message}`, null, true);
   }
 });
 
 attachButton("login", async () => {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
+  if (lockedUntil && Date.now() < lockedUntil) {
+    log("登录失败：已锁定，请稍后再试", null, true);
+    return;
+  }
   try {
     const data = await request("/auth/login", {
       method: "POST",
@@ -82,9 +169,17 @@ attachButton("login", async () => {
     token = data.token;
     localStorage.setItem(tokenKey, token);
     setStatus(`已登录：${username}`);
-    log("登录成功", data);
+    log(`账号 ${username} 登录成功`);
+    loginFailures = 0;
+    lockedUntil = null;
+    showSection("role");
+    await refreshPlayer();
   } catch (error) {
-    log(`登录失败: ${error.message}`);
+    loginFailures += 1;
+    if (loginFailures >= 5) {
+      lockedUntil = Date.now() + 10 * 60 * 1000;
+    }
+    log(`登录失败：${error.message}`, null, true);
   }
 });
 
@@ -92,11 +187,15 @@ attachButton("logout", async () => {
   try {
     await request("/auth/logout", { method: "POST" });
   } catch (error) {
-    log(`注销失败: ${error.message}`);
+    log(`注销失败：${error.message}`, null, true);
   }
   token = null;
   localStorage.removeItem(tokenKey);
   setStatus("未登录");
+  currentPlayer = null;
+  updatePlayerInfo(null);
+  showSection("auth");
+  log("账号已退出");
 });
 
 attachButton("createPlayer", async () => {
@@ -106,30 +205,26 @@ attachButton("createPlayer", async () => {
       method: "POST",
       body: JSON.stringify({ name }),
     });
-    updatePlayerInfo(data);
-    log("创建角色成功", data);
+    currentPlayer = data;
+    updatePlayerInfo(currentPlayer);
+    log(`角色 ${data.name} 创建成功`);
   } catch (error) {
-    log(`创建角色失败: ${error.message}`);
+    log(`创建角色失败：${error.message}`, null, true);
   }
 });
 
 attachButton("getPlayer", async () => {
-  try {
-    const data = await request("/player/me", { method: "GET" });
-    updatePlayerInfo(data);
-    log("获取角色信息成功", data);
-  } catch (error) {
-    log(`获取角色失败: ${error.message}`);
-  }
+  await refreshPlayer();
 });
 
 attachButton("deletePlayer", async () => {
   try {
     const data = await request("/player/delete", { method: "POST" });
-    updatePlayerInfo(data);
-    log("删除角色成功", data);
+    currentPlayer = null;
+    updatePlayerInfo(null);
+    log("角色已删除");
   } catch (error) {
-    log(`删除角色失败: ${error.message}`);
+    log(`删除角色失败：${error.message}`, null, true);
   }
 });
 
@@ -137,19 +232,19 @@ attachButton("train", async () => {
   try {
     const data = await request("/cultivation/train", { method: "POST" });
     updateProgressInfo(data);
-    log("修炼完成", data);
+    log("修炼完成");
   } catch (error) {
-    log(`修炼失败: ${error.message}`);
+    log(`修炼失败：${error.message}`, null, true);
   }
 });
 
 attachButton("explore", async () => {
   try {
     const data = await request("/event/explore", { method: "POST" });
-    updateProgressInfo(data);
-    log("历练完成", data);
+    updateExploreInfo(data);
+    log("历练完成");
   } catch (error) {
-    log(`历练失败: ${error.message}`);
+    log(`历练失败：${error.message}`, null, true);
   }
 });
 
@@ -157,9 +252,9 @@ attachButton("pve", async () => {
   try {
     const data = await request("/challenge/pve", { method: "POST" });
     updateBattleInfo(data);
-    log("PVE 完成", data);
+    log("挑战妖兽完成");
   } catch (error) {
-    log(`PVE 失败: ${error.message}`);
+    log(`PVE 失败：${error.message}`, null, true);
   }
 });
 
@@ -171,9 +266,9 @@ attachButton("pvp", async () => {
       body: JSON.stringify({ opponent_id: opponentId }),
     });
     updateBattleInfo(data);
-    log("PVP 完成", data);
+    log("玩家对战完成");
   } catch (error) {
-    log(`PVP 失败: ${error.message}`);
+    log(`PVP 失败：${error.message}`, null, true);
   }
 });
 
@@ -181,9 +276,9 @@ attachButton("capturePet", async () => {
   try {
     const data = await request("/pet/capture", { method: "POST" });
     updatePetInfo(data);
-    log("捕捉灵宠成功", data);
+    log(`捕捉灵宠成功：${data.name}`);
   } catch (error) {
-    log(`捕捉灵宠失败: ${error.message}`);
+    log(`捕捉灵宠失败：${error.message}`, null, true);
   }
 });
 
@@ -195,9 +290,9 @@ attachButton("upgradePet", async () => {
       body: JSON.stringify({ pet_id: petId }),
     });
     updatePetInfo(data);
-    log("灵宠升级成功", data);
+    log("灵宠升级成功");
   } catch (error) {
-    log(`灵宠升级失败: ${error.message}`);
+    log(`灵宠升级失败：${error.message}`, null, true);
   }
 });
 
@@ -212,9 +307,9 @@ attachButton("getEvolveOptions", async () => {
     if (data.options && data.options.length) {
       document.getElementById("evolveChoice").value = data.options[0][0];
     }
-    log("获取进化选项成功", data);
+    log("获取进化选项成功");
   } catch (error) {
-    log(`获取进化选项失败: ${error.message}`);
+    log(`获取进化选项失败：${error.message}`, null, true);
   }
 });
 
@@ -227,14 +322,72 @@ attachButton("evolvePet", async () => {
       body: JSON.stringify({ pet_id: petId, choice }),
     });
     updatePetInfo(data);
-    log("进化完成", data);
+    log("进化完成");
   } catch (error) {
-    log(`进化失败: ${error.message}`);
+    log(`进化失败：${error.message}`, null, true);
   }
+});
+
+async function refreshPlayer() {
+  try {
+    const data = await request("/player/me", { method: "GET" });
+    currentPlayer = data;
+    updatePlayerInfo(currentPlayer);
+    log(`角色 ${data.name} 已载入`);
+    return data;
+  } catch (error) {
+    updatePlayerInfo(null);
+    log(`获取角色失败：${error.message}`, null, true);
+    return null;
+  }
+}
+
+function showSection(section) {
+  authSection.style.display = section === "auth" ? "block" : "none";
+  roleSection.style.display = section === "role" ? "block" : "none";
+  gameSection.style.display = section === "game" ? "block" : "none";
+}
+
+document.getElementById("enterGame").addEventListener("click", async () => {
+  const player = await refreshPlayer();
+  if (player) {
+    showSection("game");
+  }
+});
+
+document.getElementById("backToRoles").addEventListener("click", () => {
+  showSection("role");
+});
+
+document.getElementById("toggleLog").addEventListener("click", () => {
+  logPanel.classList.toggle("collapsed");
+  const isCollapsed = logPanel.classList.contains("collapsed");
+  document.getElementById("toggleLog").textContent = isCollapsed ? "展开" : "收起";
+});
+
+document.getElementById("clearLog").addEventListener("click", () => {
+  logEl.innerHTML = "";
+});
+
+document.getElementById("toggleSound").addEventListener("click", (event) => {
+  const isOn = event.target.textContent.includes("开");
+  event.target.textContent = `音效：${isOn ? "关" : "开"}`;
+});
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach((item) => item.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(`tab-${tab.dataset.tab}`).classList.add("active");
+  });
 });
 
 if (token) {
   setStatus("已登录");
+  showSection("role");
+  refreshPlayer();
 } else {
   setStatus("未登录");
+  showSection("auth");
 }

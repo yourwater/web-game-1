@@ -3,28 +3,36 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>修仙游戏控制台</title>
+    <title>玄界修仙录 · 控制台</title>
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <header class="hero">
       <div>
-        <p class="badge">NAS 轻量修仙 · API 控制台</p>
-        <h1>修仙游戏一站式控制面板</h1>
+        <p class="badge">玄界修仙录 · 轻量修仙养成</p>
+        <h1>玄界修仙录</h1>
         <p class="subtitle">
-          面向 Flask API 的快速操作界面，支持注册/登录、角色创建、修炼、历练、挑战、灵宠系统。
+          入口登录 → 角色管理 → 核心玩法。所有道具与资源均通过历练产出，无商城纯肝养。
         </p>
       </div>
       <div class="hero-card">
         <h2>连接状态</h2>
         <p id="status">未登录</p>
         <div class="pill">API: http://localhost:8000</div>
+        <div class="settings">
+          <button class="ghost" id="toggleSound">音效：开</button>
+          <select id="quality">
+            <option value="high">高画质</option>
+            <option value="medium">中画质</option>
+            <option value="low">低画质</option>
+          </select>
+        </div>
       </div>
     </header>
 
     <main class="grid">
-      <section class="card">
-        <h2>账号</h2>
+      <section class="card" id="authSection">
+        <h2>账号入口</h2>
         <div class="form-grid">
           <label>
             用户名
@@ -34,74 +42,130 @@
             密码
             <input id="password" type="password" placeholder="请输入密码" />
           </label>
+          <label class="checkbox">
+            <input type="checkbox" id="rememberMe" />
+            记住密码
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="autoLogin" />
+            自动登录
+          </label>
           <button class="primary" id="register">注册</button>
           <button class="ghost" id="login">登录</button>
-          <button class="ghost" id="logout">注销</button>
         </div>
+        <p class="helper">登录后将进入角色管理页面。</p>
       </section>
 
-      <section class="card">
-        <h2>角色</h2>
+      <section class="card" id="roleSection">
+        <h2>角色管理</h2>
         <div class="form-grid">
           <label>
             角色名
             <input id="playerName" placeholder="如：小青" />
           </label>
+          <label>
+            先天灵根
+            <select id="rootElement">
+              <option value="金">金</option>
+              <option value="木">木</option>
+              <option value="水">水</option>
+              <option value="火">火</option>
+              <option value="土">土</option>
+            </select>
+          </label>
+          <label>
+            初始形象
+            <select id="avatar">
+              <option value="male">男</option>
+              <option value="female">女</option>
+            </select>
+          </label>
           <button class="primary" id="createPlayer">创建角色</button>
           <button class="ghost" id="getPlayer">查看角色</button>
           <button class="danger" id="deletePlayer">删除角色</button>
+          <button class="primary" id="enterGame">进入修仙</button>
         </div>
         <pre id="playerInfo">尚未获取角色信息。</pre>
       </section>
 
-      <section class="card">
-        <h2>修炼 & 历练</h2>
-        <div class="button-row">
-          <button class="primary" id="train">修炼</button>
-          <button class="primary" id="explore">历练</button>
+      <section class="card full" id="gameSection">
+        <div class="game-header">
+          <div>
+            <h2>核心玩法</h2>
+            <p class="helper">登录并进入修仙后解锁全部功能。</p>
+          </div>
+          <div class="game-actions">
+            <button class="ghost" id="backToRoles">返回角色管理</button>
+            <button class="ghost" id="logout">退出游戏</button>
+          </div>
         </div>
-        <pre id="progressInfo">修炼日志将在这里显示。</pre>
-      </section>
+        <div class="player-bar" id="playerBar">尚未进入修仙。</div>
 
-      <section class="card">
-        <h2>挑战</h2>
-        <div class="form-grid">
-          <button class="primary" id="pve">挑战妖兽 (PVE)</button>
-          <label>
-            对手角色 ID
-            <input id="opponentId" placeholder="player_xxxx" />
-          </label>
-          <button class="ghost" id="pvp">玩家对战 (PVP)</button>
+        <div class="tab-bar">
+          <button class="tab active" data-tab="cultivation">修炼</button>
+          <button class="tab" data-tab="explore">历练</button>
+          <button class="tab" data-tab="challenge">挑战</button>
+          <button class="tab" data-tab="pet">灵宠</button>
         </div>
-        <pre id="battleInfo">挑战结果将在这里显示。</pre>
-      </section>
 
-      <section class="card">
-        <h2>灵宠系统</h2>
-        <div class="form-grid">
-          <button class="primary" id="capturePet">捕捉灵宠</button>
-          <label>
-            灵宠 ID
-            <input id="petId" placeholder="pet_xxxx" />
-          </label>
-          <button class="ghost" id="upgradePet">灵宠升级</button>
-          <button class="ghost" id="getEvolveOptions">获取进化选项</button>
-          <label>
-            进化选项 key
-            <input id="evolveChoice" placeholder="如：crit_rate" />
-          </label>
-          <button class="primary" id="evolvePet">提交进化</button>
+        <div class="tab-content active" id="tab-cultivation">
+          <div class="button-row">
+            <button class="primary" id="train">修炼</button>
+          </div>
+          <pre id="progressInfo">修炼日志将在这里显示。</pre>
         </div>
-        <pre id="petInfo">灵宠信息将在这里显示。</pre>
-      </section>
 
-      <section class="card full">
-        <h2>API 日志</h2>
-        <div id="log"></div>
+        <div class="tab-content" id="tab-explore">
+          <div class="button-row">
+            <button class="primary" id="explore">历练</button>
+          </div>
+          <pre id="exploreInfo">历练结果将在这里显示。</pre>
+        </div>
+
+        <div class="tab-content" id="tab-challenge">
+          <div class="form-grid">
+            <button class="primary" id="pve">挑战妖兽 (PVE)</button>
+            <label>
+              对手角色 ID
+              <input id="opponentId" placeholder="player_xxxx" />
+            </label>
+            <button class="ghost" id="pvp">玩家对战 (PVP)</button>
+          </div>
+          <pre id="battleInfo">挑战结果将在这里显示。</pre>
+        </div>
+
+        <div class="tab-content" id="tab-pet">
+          <div class="form-grid">
+            <button class="primary" id="capturePet">捕捉灵宠</button>
+            <label>
+              灵宠 ID
+              <input id="petId" placeholder="pet_xxxx" />
+            </label>
+            <button class="ghost" id="upgradePet">灵宠升级</button>
+            <button class="ghost" id="getEvolveOptions">获取进化选项</button>
+            <label>
+              进化选项 key
+              <input id="evolveChoice" placeholder="如：crit_rate" />
+            </label>
+            <button class="primary" id="evolvePet">提交进化</button>
+          </div>
+          <pre id="petInfo">灵宠信息将在这里显示。</pre>
+        </div>
       </section>
     </main>
 
-    <footer class="footer">修仙游戏控制台 · 可嵌入前端或群晖 NAS Docker 环境</footer>
+    <div class="log-panel" id="logPanel">
+      <div class="log-header">
+        <span>【修仙日志】</span>
+        <div class="log-actions">
+          <button class="ghost" id="clearLog">清理</button>
+          <button class="ghost" id="toggleLog">收起</button>
+        </div>
+      </div>
+      <div id="log"></div>
+    </div>
+
+    <footer class="footer">玄界修仙录 · 可嵌入前端或群晖 NAS Docker 环境</footer>
 
     <script src="/static/app.js"></script>
   </body>
