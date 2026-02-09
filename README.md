@@ -25,3 +25,32 @@ docker run -d --name web-game-1 -p 8080:80 web-game-1
 ```
 
 浏览器访问：`http://<NAS_IP>:8080`。
+
+### Docker 拉取失败（无法访问 Docker Hub）
+
+如果出现类似错误：
+
+```
+Get "https://registry-1.docker.io/v2/": net/http: request canceled while waiting for connection
+```
+
+说明 NAS 无法访问 Docker Hub。可选择以下方案之一：
+
+1. **配置镜像加速器**（推荐）
+   - 在 NAS 的 Docker 设置中添加镜像源（如企业/自建镜像仓库或国内加速源）。
+   - 重新执行 `docker build`。
+
+2. **离线导入基础镜像**
+   - 在可联网的机器上执行：
+     ```bash
+     docker pull nginx:1.27-alpine
+     docker save -o nginx-1.27-alpine.tar nginx:1.27-alpine
+     ```
+   - 将 `nginx-1.27-alpine.tar` 拷贝到 NAS：
+     ```bash
+     docker load -i nginx-1.27-alpine.tar
+     ```
+   - 再回到项目目录执行 `docker build`。
+
+3. **使用私有镜像仓库**
+   - 将 `nginx:1.27-alpine` 推送到你可访问的私有仓库，然后修改 `Dockerfile` 的 `FROM` 为私有仓库地址。
