@@ -21,7 +21,7 @@ docker build -t web-game-1 .
 运行容器（默认带内置剧情）：
 
 ```bash
-docker run -d --name web-game-1 -p 8200:80 web-game-1
+docker run -d --name web-game-1 -p 8200:8200 web-game-1
 ```
 
 ### 使用剧情映射（推荐）
@@ -30,7 +30,7 @@ docker run -d --name web-game-1 -p 8200:80 web-game-1
 
 ```bash
 docker run -d --name web-game-1 \
-  -p 8200:80 \
+  -p 8200:8200 \
   -v /volume1/docker/game-wz1/data/story.json:/usr/share/nginx/html/data/story.json:ro \
   web-game-1
 ```
@@ -39,7 +39,7 @@ docker run -d --name web-game-1 \
 
 ```bash
 docker run -d --name web-game-1 \
-  -p 8200:80 \
+  -p 8200:8200 \
   -v /volume1/docker/game-wz1:/usr/share/nginx/html:ro \
   web-game-1
 ```
@@ -59,6 +59,13 @@ docker run -d --name web-game-1 \
 - 在 `data/story.json` 的对应场景里配置 `music` 字段，例如：  
   `"music": "data/audio/fog-harbor-theme.mp3"`
 - 页面右上角提供“音乐：开/关”按钮控制播放。
+- 当前内置剧情示例引用的文件名如下（放在 `data/audio/`）：  
+  - `fog-harbor-theme.mp3`  
+  - `lighthouse-wind.mp3`  
+  - `archive-hum.mp3`  
+  - `tide-echo.mp3`  
+  - `bell-awakening.mp3`  
+  - `quiet-fog.mp3`
 
 ### 语音朗读
 
