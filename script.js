@@ -11,24 +11,14 @@ const choicesEl = document.getElementById("choices");
 const overlayEl = document.getElementById("sceneOverlay");
 const bgmEl = document.getElementById("bgm");
 
-const saveSlotButtons = [
-  document.getElementById("saveSlot1"),
-  document.getElementById("saveSlot2"),
-  document.getElementById("saveSlot3"),
-];
-const loadSlotButtons = [
-  document.getElementById("loadSlot1"),
-  document.getElementById("loadSlot2"),
-  document.getElementById("loadSlot3"),
-];
-const exportBtn = document.getElementById("exportSave");
-const importBtn = document.getElementById("importSave");
-const importFile = document.getElementById("importFile");
+const saveBtn = document.getElementById("saveBtn");
+const loadBtn = document.getElementById("loadBtn");
 const restartBtn = document.getElementById("restartBtn");
 const toggleMusicBtn = document.getElementById("toggleMusic");
 const toggleNarrationBtn = document.getElementById("toggleNarration");
 
 const autosaveKey = "fogHarborAutosave";
+const saveKey = "fogHarborSave";
 const musicEnabledKey = "fogHarborMusicEnabled";
 const narrationEnabledKey = "fogHarborNarrationEnabled";
 let musicEnabled = localStorage.getItem(musicEnabledKey) === "true";
@@ -120,77 +110,19 @@ function updateNarrationButton() {
   toggleNarrationBtn.textContent = `朗读：${narrationEnabled ? "开" : "关"}`;
 }
 
-function saveSlot(slotIndex) {
-  const key = `fogHarborSlot${slotIndex}`;
-  localStorage.setItem(key, state.current);
-  alert(`已保存到存档 ${slotIndex}`);
+function saveProgress() {
+  localStorage.setItem(saveKey, state.current);
+  alert("进度已保存。");
 }
 
-function loadSlot(slotIndex) {
-  const key = `fogHarborSlot${slotIndex}`;
-  const saved = localStorage.getItem(key);
+function loadProgress() {
+  const saved = localStorage.getItem(saveKey);
   if (saved && story[saved]) {
     renderScene(saved);
-    alert(`已读取存档 ${slotIndex}`);
+    alert("进度已读取。");
   } else {
-    alert(`没有找到存档 ${slotIndex}`);
+    alert("没有找到已保存的进度。");
   }
-}
-
-function exportSaves() {
-  const payload = {
-    current: state.current,
-    autosave: localStorage.getItem(autosaveKey),
-    slots: {
-      1: localStorage.getItem("fogHarborSlot1"),
-      2: localStorage.getItem("fogHarborSlot2"),
-      3: localStorage.getItem("fogHarborSlot3"),
-    },
-    exportedAt: new Date().toISOString(),
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "fog-harbor-save.json";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-function importSaves(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const payload = JSON.parse(reader.result);
-      if (payload?.autosave) {
-        localStorage.setItem(autosaveKey, payload.autosave);
-      }
-      if (payload?.slots) {
-        Object.entries(payload.slots).forEach(([slot, value]) => {
-          if (value) {
-            localStorage.setItem(`fogHarborSlot${slot}`, value);
-          }
-        });
-      }
-      if (payload?.current && story[payload.current]) {
-        renderScene(payload.current);
-      } else {
-        const autosave = localStorage.getItem(autosaveKey);
-        if (autosave && story[autosave]) {
-          renderScene(autosave);
-        }
-      }
-      alert("存档已导入。");
-    } catch (error) {
-      alert("导入失败：文件格式不正确。");
-    }
-  };
-  reader.readAsText(file);
 }
 
 function restartGame() {
@@ -219,22 +151,8 @@ async function loadStory() {
   }
 }
 
-saveSlotButtons.forEach((button, index) => {
-  button.addEventListener("click", () => saveSlot(index + 1));
-});
-
-loadSlotButtons.forEach((button, index) => {
-  button.addEventListener("click", () => loadSlot(index + 1));
-});
-
-exportBtn.addEventListener("click", exportSaves);
-importBtn.addEventListener("click", () => importFile.click());
-importFile.addEventListener("change", (event) => {
-  const file = event.target.files[0];
-  importSaves(file);
-  importFile.value = "";
-});
-
+saveBtn.addEventListener("click", saveProgress);
+loadBtn.addEventListener("click", loadProgress);
 restartBtn.addEventListener("click", restartGame);
 
 toggleMusicBtn.addEventListener("click", () => {
