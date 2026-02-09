@@ -14,9 +14,16 @@
         <p class="subtitle">一场至少一个小时的中文文字冒险</p>
       </div>
       <div class="game__controls">
-        <button id="saveBtn" class="ghost">保存进度</button>
-        <button id="loadBtn" class="ghost">读取进度</button>
+        <button id="saveSlot1" class="ghost">保存 1</button>
+        <button id="loadSlot1" class="ghost">读取 1</button>
+        <button id="saveSlot2" class="ghost">保存 2</button>
+        <button id="loadSlot2" class="ghost">读取 2</button>
+        <button id="saveSlot3" class="ghost">保存 3</button>
+        <button id="loadSlot3" class="ghost">读取 3</button>
+        <button id="exportSave" class="ghost">导出存档</button>
+        <button id="importSave" class="ghost">导入存档</button>
         <button id="restartBtn" class="ghost">重新开始</button>
+        <input id="importFile" type="file" accept="application/json" hidden />
       </div>
     </header>
 
@@ -28,7 +35,7 @@
     </section>
 
     <footer class="game__footer">
-      <p>提示：可离线运行，适合部署到 NAS 的静态网页服务中。</p>
+      <p>提示：剧情内容独立于容器，可通过挂载 data/story.json 更新。</p>
     </footer>
   </main>
 

@@ -1,6 +1,6 @@
 # web-game-1
 
-一个可部署在 NAS 的中文文字冒险小游戏（纯静态站点）。
+一个可部署在 NAS 的中文文字冒险小游戏（纯静态站点）。剧情内容与容器分离，可通过挂载 `data/story.json` 随时更新。
 
 ## 本地运行
 
@@ -18,13 +18,39 @@ python -m http.server 8000
 docker build -t web-game-1 .
 ```
 
-运行容器：
+运行容器（默认带内置剧情）：
 
 ```bash
 docker run -d --name web-game-1 -p 8080:80 web-game-1
 ```
 
+### 使用剧情映射（推荐）
+
+将宿主机的 `story.json` 映射到容器内，后续补充剧情无需重建镜像：
+
+```bash
+docker run -d --name web-game-1 \
+  -p 8080:80 \
+  -v /volume1/docker/game-wz1/data/story.json:/usr/share/nginx/html/data/story.json:ro \
+  web-game-1
+```
+
+若希望替换全部静态资源，也可以直接映射整个目录：
+
+```bash
+docker run -d --name web-game-1 \
+  -p 8080:80 \
+  -v /volume1/docker/game-wz1:/usr/share/nginx/html:ro \
+  web-game-1
+```
+
 浏览器访问：`http://<NAS_IP>:8080`。
+
+## 存档说明
+
+- 游戏会自动保存最近进度（浏览器本地存储）。
+- 提供 3 个手动存档槽位，可在页面右上角保存/读取。
+- 可导出/导入存档文件，便于跨设备继续游玩。
 
 ### Docker 拉取失败（无法访问 Docker Hub）
 
