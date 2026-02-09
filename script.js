@@ -179,3 +179,11 @@ toggleNarrationBtn.addEventListener("click", () => {
 updateMusicButton();
 updateNarrationButton();
 loadStory();
+
+if (bgmEl) {
+  bgmEl.addEventListener("error", () => {
+    musicEnabled = false;
+    localStorage.setItem(musicEnabledKey, "false");
+    updateMusicButton();
+  });
+}
