@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>雾港回声：文字冒险</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div>
+        <p class="subtitle">一小时以上剧情 · 可保存进度 · 多线探索</p>
+        <h1>雾港回声</h1>
+        <p class="tagline">你是来雾港追查失踪的测绘师，亦或来找寻自己遗忘的名字？</p>
+      </div>
+      <div class="actions">
+        <button id="start-btn" class="primary">开始冒险</button>
+        <button id="load-btn">读取存档</button>
+        <button id="restart-btn">重新开始</button>
+      </div>
+    </header>
+
+    <section class="status">
+      <div class="stat"><span>勇气</span><strong id="stat-bravery">0</strong></div>
+      <div class="stat"><span>洞察</span><strong id="stat-insight">0</strong></div>
+      <div class="stat"><span>信任</span><strong id="stat-trust">0</strong></div>
+      <div class="stat"><span>背包</span><strong id="inventory">无</strong></div>
+    </section>
+
+    <section class="story">
+      <h2 id="story-title">请点击“开始冒险”</h2>
+      <article id="story-text" class="story-text"></article>
+    </section>
+
+    <section class="choices" id="choices"></section>
+
+    <footer class="footer">
+      <p>提示：这是一段可完整阅读的长篇剧情，你可以慢慢阅读，也可以在关键分支处探索不同结局。</p>
+    </footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
