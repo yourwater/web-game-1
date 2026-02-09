@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>雾港回声 · 文字冒险</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="scene-overlay" id="sceneOverlay" aria-hidden="true"></div>
+  <main class="game">
+    <header class="game__header">
+      <div>
+        <h1>雾港回声</h1>
+        <p class="subtitle">一场至少一个小时的中文文字冒险</p>
+      </div>
+      <div class="game__controls">
+        <button id="saveBtn" class="ghost">保存进度</button>
+        <button id="loadBtn" class="ghost">读取进度</button>
+        <button id="restartBtn" class="ghost">重新开始</button>
+        <button id="toggleMusic" class="ghost">音乐：关</button>
+        <button id="toggleNarration" class="ghost">朗读：关</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="card__title" id="sceneTitle">加载中…</div>
+      <div class="card__meta" id="sceneMeta"></div>
+      <div class="card__content" id="sceneText"></div>
+      <div class="card__choices" id="choices"></div>
+    </section>
+
+    <footer class="game__footer">
+      <p>提示：剧情内容独立于容器，可通过挂载 data/story.json 更新。</p>
+    </footer>
+  </main>
+
+  <audio id="bgm" loop></audio>
+  <script src="script.js"></script>
+</body>
+</html>
