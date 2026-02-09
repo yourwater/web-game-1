@@ -5,10 +5,10 @@
 ## 本地运行
 
 ```bash
-python -m http.server 8000
+python -m http.server 8200
 ```
 
-然后访问：`http://localhost:8000`。
+然后访问：`http://localhost:8200`。
 
 ## Docker 部署
 
@@ -21,7 +21,7 @@ docker build -t web-game-1 .
 运行容器（默认带内置剧情）：
 
 ```bash
-docker run -d --name web-game-1 -p 8080:80 web-game-1
+docker run -d --name web-game-1 -p 8200:80 web-game-1
 ```
 
 ### 使用剧情映射（推荐）
@@ -30,7 +30,7 @@ docker run -d --name web-game-1 -p 8080:80 web-game-1
 
 ```bash
 docker run -d --name web-game-1 \
-  -p 8080:80 \
+  -p 8200:80 \
   -v /volume1/docker/game-wz1/data/story.json:/usr/share/nginx/html/data/story.json:ro \
   web-game-1
 ```
@@ -39,12 +39,12 @@ docker run -d --name web-game-1 \
 
 ```bash
 docker run -d --name web-game-1 \
-  -p 8080:80 \
+  -p 8200:80 \
   -v /volume1/docker/game-wz1:/usr/share/nginx/html:ro \
   web-game-1
 ```
 
-浏览器访问：`http://<NAS_IP>:8080`。
+浏览器访问：`http://<NAS_IP>:8200`。
 
 ## 存档说明
 
