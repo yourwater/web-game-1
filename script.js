@@ -8,6 +8,8 @@ const titleEl = document.getElementById("sceneTitle");
 const metaEl = document.getElementById("sceneMeta");
 const textEl = document.getElementById("sceneText");
 const choicesEl = document.getElementById("choices");
+const overlayEl = document.getElementById("sceneOverlay");
+const bgmEl = document.getElementById("bgm");
 
 const saveSlotButtons = [
   document.getElementById("saveSlot1"),
@@ -23,8 +25,15 @@ const exportBtn = document.getElementById("exportSave");
 const importBtn = document.getElementById("importSave");
 const importFile = document.getElementById("importFile");
 const restartBtn = document.getElementById("restartBtn");
+const toggleMusicBtn = document.getElementById("toggleMusic");
+const toggleNarrationBtn = document.getElementById("toggleNarration");
 
 const autosaveKey = "fogHarborAutosave";
+const musicEnabledKey = "fogHarborMusicEnabled";
+const narrationEnabledKey = "fogHarborNarrationEnabled";
+let musicEnabled = localStorage.getItem(musicEnabledKey) === "true";
+let narrationEnabled = localStorage.getItem(narrationEnabledKey) === "true";
+let isNarrating = false;
 
 function renderScene(id) {
   const scene = story[id];
@@ -43,7 +52,72 @@ function renderScene(id) {
     choicesEl.appendChild(btn);
   });
 
+  applySceneMood(scene);
+  updateMusic(scene);
+  updateNarration(scene);
   localStorage.setItem(autosaveKey, id);
+}
+
+function applySceneMood(scene) {
+  if (!overlayEl) return;
+  if (scene.moodColor) {
+    overlayEl.style.background = scene.moodColor;
+    overlayEl.style.opacity = "1";
+  } else {
+    overlayEl.style.opacity = "0";
+  }
+}
+
+function updateMusic(scene) {
+  if (!bgmEl) return;
+  const target = scene.music || "";
+  if (!musicEnabled || !target) {
+    bgmEl.pause();
+    bgmEl.removeAttribute("src");
+    return;
+  }
+  if (bgmEl.getAttribute("src") !== target) {
+    bgmEl.setAttribute("src", target);
+  }
+  bgmEl.play().catch(() => {});
+}
+
+function speakText(text) {
+  if (!("speechSynthesis" in window)) {
+    alert("当前浏览器不支持语音朗读。");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "zh-CN";
+  utterance.onend = () => {
+    isNarrating = false;
+    updateNarrationButton();
+  };
+  isNarrating = true;
+  updateNarrationButton();
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopNarration() {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+  isNarrating = false;
+  updateNarrationButton();
+}
+
+function updateNarration(scene) {
+  if (!narrationEnabled) return;
+  speakText(`${scene.title}。${scene.text}`);
+}
+
+function updateMusicButton() {
+  toggleMusicBtn.textContent = `音乐：${musicEnabled ? "开" : "关"}`;
+}
+
+function updateNarrationButton() {
+  toggleNarrationBtn.textContent = `朗读：${narrationEnabled ? "开" : "关"}`;
 }
 
 function saveSlot(slotIndex) {
@@ -163,4 +237,27 @@ importFile.addEventListener("change", (event) => {
 
 restartBtn.addEventListener("click", restartGame);
 
+toggleMusicBtn.addEventListener("click", () => {
+  musicEnabled = !musicEnabled;
+  localStorage.setItem(musicEnabledKey, String(musicEnabled));
+  updateMusicButton();
+  if (musicEnabled && story[state.current]) {
+    updateMusic(story[state.current]);
+  } else if (!musicEnabled) {
+    bgmEl.pause();
+  }
+});
+
+toggleNarrationBtn.addEventListener("click", () => {
+  narrationEnabled = !narrationEnabled;
+  localStorage.setItem(narrationEnabledKey, String(narrationEnabled));
+  if (narrationEnabled && story[state.current]) {
+    speakText(`${story[state.current].title}。${story[state.current].text}`);
+  } else {
+    stopNarration();
+  }
+});
+
+updateMusicButton();
+updateNarrationButton();
 loadStory();
